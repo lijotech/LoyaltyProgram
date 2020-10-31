@@ -43,7 +43,12 @@ namespace MemberAPI
             services.AddDbContextPool<MemberContext>(
                  options => options.UseSqlServer(Configuration.GetConnectionString("live")));
             services.AddAutoMapper(typeof(Startup));
-            services.AddMvc().AddFluentValidation();
+            services.AddMvc()
+                .AddFluentValidation()
+                .ConfigureApiBehaviorOptions(opt =>
+                {
+                    opt.SuppressMapClientErrors = true;
+                });
 
             services.AddSwaggerGen(c =>
             {
@@ -94,7 +99,8 @@ namespace MemberAPI
             services.AddSingleton(Configuration.GetSection("EmailConfiguration").Get<EmailConfiguration>());
             services.AddScoped<IEmailSender, EmailSender>();
 
-            services.Configure<FormOptions>(o => {
+            services.Configure<FormOptions>(o =>
+            {
                 o.ValueLengthLimit = int.MaxValue;
                 o.MultipartBodyLengthLimit = int.MaxValue;
                 o.MemoryBufferThreshold = int.MaxValue;
