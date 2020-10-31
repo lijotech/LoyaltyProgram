@@ -47,8 +47,10 @@ namespace MemberAPI.Controllers.v1
         /// <returns>Returns the created members</returns>
         /// <response code="200">Returned if the list of Members was retrieved</response>
         /// <response code="400">Returned if the Members could not be retrieved</response>
-        [ProducesResponseType(StatusCodes.Status200OK)]
+        /// <response code="401">Returned if Unauthorized</response>
+        [ProducesResponseType(StatusCodes.Status200OK) ]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [HttpGet]
         public ActionResult<List<ViewMemberModel>> MemberOperation()
         {
@@ -71,8 +73,12 @@ namespace MemberAPI.Controllers.v1
         /// <returns>Returns a single member</returns>
         /// <response code="200">Returned if the member information is retrieved</response>
         /// <response code="400">Returned if the member information cannot be retrieved</response>
+        /// <response code="401">Returned if Unauthorized</response>
+        /// <response code="404">Not Found</response>
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         [HttpGet("{entityId}")]
         public async Task<ActionResult<ViewMemberModel>> MemberOperation(Guid entityId)
         {
@@ -80,6 +86,10 @@ namespace MemberAPI.Controllers.v1
             {
 
                 var member = await _repository.GetItem(entityId);
+                if (member==null)
+                {
+                    return NotFound("Member Information Not Found");
+                }
                 return _mapper.Map<ViewMemberModel>(member);
             }
             catch (Exception ex)
@@ -96,6 +106,7 @@ namespace MemberAPI.Controllers.v1
         /// <returns>Returns the created customer</returns>
         /// <response code="200">Returned if the member was created</response>
         /// <response code="400">Returned if the model couldn't be parsed or the member couldn't be saved</response>
+        /// <response code="422">Model couldn't be parsed</response>
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
@@ -115,13 +126,12 @@ namespace MemberAPI.Controllers.v1
                 var addedMember = await _repository.AddAsync(member);
 
                 if (addedMember != null)
-                {
-                    // throw new Exception("deliberate");
+                {                    
                     var confirmationLink = Url.Action("ConfirmEmail", "Member",
                                         new
                                         {
-                                            u = protector.Protect(member.Username),
-                                            t = member.EmailConfirmationToken
+                                            username = protector.Protect(member.Username),
+                                            token = member.EmailConfirmationToken
                                         }, Request.Scheme);
                     var message = new Message(new string[] { "lijotech@gmail.com" },
                         "Email Confirmation", "Click this link to Continue:" + confirmationLink, null);
@@ -147,8 +157,9 @@ namespace MemberAPI.Controllers.v1
         /// </summary>
         /// <param name="updateMemberModel">Model to update an existing Member</param>
         /// <returns>Returns the updated Member</returns>
-        /// /// <response code="200">Returned if the Member was updated</response>
-        /// /// <response code="400">Returned if the model couldn't be parsed or the Member couldn't be found</response>
+        /// <response code="200">Returned if the Member was updated</response>
+        /// <response code="400">Returned if cannot be Processed or the Member couldn't be found</response>
+        /// <response code="422">Model couldn't be parsed</response>
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
@@ -180,39 +191,39 @@ namespace MemberAPI.Controllers.v1
         /// <summary>
         /// Action to Confirm Email After Registration.
         /// </summary>
-        /// <param name="ConfirmEmailModel">Model to Confirm Email</param>
-        /// <returns>Returns the confirmed Member</returns>
-        /// /// <response code="200">Returned if the member was created</response>
-        /// /// <response code="400">Returned if the model couldn't be parsed or the member couldn't be saved</response>
-        /// /// <response code="422">Returned when the validation failed</response>
+        /// <param>Model to Confirm Email</param>
+        /// <returns>Returns the ststus Message</returns>
+        /// <response code="200">Returned if the member Email Confirmation is successfull</response>
+        /// <response code="400">Returned if the model couldn't be parsed or validation failed</response>
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
         [Route("ConfirmEmail")]
         [HttpGet]
-        public async Task<ActionResult<string>> ConfirmEmail([FromQuery] string u, [FromQuery] string t)
+        public async Task<ActionResult<string>> ConfirmEmail([FromQuery] string username, [FromQuery] string token)
         {
             await _repository.BeginTransactionAsync();
             try
             {
-                if (u == null || t == null)
+                if (username == null || token == null)
                 {
                     return BadRequest("Broken Link");
                 }
-                string g = protector.Unprotect(u);
+                //string g = protector.Unprotect(username);
                 var memberEmailConfirmCheck = _repository.GetAll()
-                    .Where(c => c.Email == protector.Unprotect(u)
-                    && c.EmailConfirmationToken == t).SingleOrDefault();
+                    .Where(c => c.Email == protector.Unprotect(username)
+                    && c.EmailConfirmationToken == token).SingleOrDefault();
                 if (memberEmailConfirmCheck != null)
                 {
                     UpdateMemberModel updateMember = new UpdateMemberModel
                     {
-                        MemberId = memberEmailConfirmCheck.MemberId,
-                        IsEmailConfirmed = true
+                        MemberId = memberEmailConfirmCheck.MemberId                       
                     };
-                    var updatedMember = _repository.Update(_mapper.Map(updateMember, memberEmailConfirmCheck));
+
+                    var updatedMember = _mapper.Map(updateMember, memberEmailConfirmCheck);
+                    updatedMember.IsEmailConfirmed = true;
+                    updatedMember = _repository.Update(updatedMember);
                     int f = await _repository.SaveChangesAsync();
-                    return "Email Confirmed.";
+                    return Ok("Email Confirmed.");
                 }
 
                 return BadRequest("Invalid Request");
@@ -225,30 +236,30 @@ namespace MemberAPI.Controllers.v1
         }
 
         /// <summary>
-        /// Action to Confirm Email After Registration.
+        /// Action for ForgotPassword.
         /// </summary>
-        /// <param name="ConfirmEmailModel">Model to Confirm Email</param>
-        /// <returns>Returns the confirmed Member</returns>
-        /// /// <response code="200">Returned if the member was created</response>
-        /// /// <response code="400">Returned if the model couldn't be parsed or the member couldn't be saved</response>
-        /// /// <response code="422">Returned when the validation failed</response>
+        /// <param name="forgotPasswordModel">Model to Confirm Email</param>
+        /// <returns>Returns the status Message.Reset Password link will be sent to registered EmailId.</returns>
+        /// <response code="200">Returned if Successfull</response>
+        /// <response code="400">Returned if the model couldn't be parsed or the member couldn't be found</response>
+        /// <response code="422">Model couldn't be parsed</response>
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
         [Route("ForgotPassword")]
         [HttpPost]
-        public async Task<ActionResult<string>> ForgotPassword([FromBody] ForgotPasswordModel e)
+        public async Task<ActionResult<string>> ForgotPassword([FromBody] ForgotPasswordModel forgotPasswordModel)
         {
             await _repository.BeginTransactionAsync();
             try
             {
-                if (e == null)
+                if (forgotPasswordModel == null)
                 {
                     return BadRequest("Email is not supplied");
                 }
                 //string g = protector.Unprotect(e);
                 var forgotPasswordUser = _repository.GetAll()
-                    .Where(c => c.Email == e.Email && c.IsEmailConfirmed == true).SingleOrDefault();
+                    .Where(c => c.Email == forgotPasswordModel.Email && c.IsEmailConfirmed == true).SingleOrDefault();
                 if (forgotPasswordUser != null)
                 {
                     UpdateMemberModel updateMember = new UpdateMemberModel
@@ -266,8 +277,8 @@ namespace MemberAPI.Controllers.v1
                         var PasswordResetLink = Url.Action("ResetPassword", "Member",
                                         new
                                         {
-                                            u = protectorForgotPassword.Protect(updatedMember.Email),
-                                            t = memberToUpdate.ForgotPasswordConfirmationToken
+                                            email = protectorForgotPassword.Protect(updatedMember.Email),
+                                            token = memberToUpdate.ForgotPasswordConfirmationToken
                                         }, Request.Scheme);
 
 
@@ -276,7 +287,7 @@ namespace MemberAPI.Controllers.v1
                         _emailSender.SendEmail(message);
                     }
                     int f = await _repository.SaveChangesAsync();
-                    return "Forgot Password Reset Link Sent to Registered Email.";
+                    return Ok(" Reset Password Link Sent to Registered Email.");
                 }
                 return BadRequest("Invalid Request");
             }
@@ -286,13 +297,29 @@ namespace MemberAPI.Controllers.v1
                 return BadRequest(ex.Message);
             }
         }
+
+        /// <summary>
+        /// Reset password link with Get Request which should not be used.
+        /// </summary>        
+        /// <returns>Returns the status Message.Cannot Use Get Request for reset password.</returns>
+        /// <response code="400">Returs Invalid Request</response>
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [Route("ResetPassword")]
         [HttpGet]
-        public ActionResult<string> ResetPassword([FromQuery] string u, [FromQuery] string t)
+        public ActionResult<string> ResetPassword([FromQuery] string email, [FromQuery] string token)
         {
             return BadRequest("Invalid Request");
         }
 
+        /// <summary>
+        /// Action for Resetpassword.
+        /// </summary>
+        /// <param name="resetPassword">Model for Reset password</param>
+        /// <returns>Returns the status Message.</returns>
+        /// <response code="200">Returned if Successfull</response>
+        /// <response code="400">Returned if the model couldn't be parsed or the member couldn't be found</response>
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [Route("ResetPassword")]
         [HttpPost]
         public async Task<ActionResult<string>> ResetPassword([FromBody] ResetPasswordModel resetPassword)
@@ -317,9 +344,9 @@ namespace MemberAPI.Controllers.v1
 
                     int f = await _repository.SaveChangesAsync();
                     if (updatedMember != null)
-                        return "Password Reset Successfully.";
+                        return Ok("Password Reset Successfully.");
                     else
-                        return "Password Reset Failed.";
+                        return BadRequest("Password Reset Failed.");
                 }
                 return BadRequest("Invalid Request");
             }
