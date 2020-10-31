@@ -48,7 +48,7 @@ namespace MemberAPI.Infrastructure
                 .ForMember(x => x.PaymentCategory, opt => opt.Condition(s => s.PaymentCategory.HasValue))
                 .ForMember(x => x.MemberStatus, opt => opt.Condition(s => s.MemberStatus.HasValue))
                 .ForMember(x => x.DOB, c => c.MapFrom(d => d.DOB))
-                .ForMember(x => x.IsEmailConfirmed, opt => opt.Condition(s => s.IsEmailConfirmed.HasValue))
+                //.ForMember(x => x.IsEmailConfirmed, opt => opt.Condition(s => s.IsEmailConfirmed.HasValue))
                    ;
 
             CreateMap<Member, ViewMemberModel>();             
