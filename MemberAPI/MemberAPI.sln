@@ -11,6 +11,10 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MemberAPI.Domain", "src\Mem
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MemberAPI.Service", "src\MemberAPI.Service\MemberAPI.Service.csproj", "{65321BEC-3FC5-4191-851D-1FD139E5DE39}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "test", "test", "{49AEAA94-EDA3-4A64-8C01-CF58D6146897}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MemberAPI.Tests", "test\MemberAPI.Tests\MemberAPI.Tests.csproj", "{2DE1928A-DE1F-485F-950D-260BF233F343}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -33,11 +37,18 @@ Global
 		{65321BEC-3FC5-4191-851D-1FD139E5DE39}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{65321BEC-3FC5-4191-851D-1FD139E5DE39}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{65321BEC-3FC5-4191-851D-1FD139E5DE39}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2DE1928A-DE1F-485F-950D-260BF233F343}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2DE1928A-DE1F-485F-950D-260BF233F343}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2DE1928A-DE1F-485F-950D-260BF233F343}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2DE1928A-DE1F-485F-950D-260BF233F343}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {160D3202-2FF9-4949-B5AB-4115766E9731}
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{2DE1928A-DE1F-485F-950D-260BF233F343} = {49AEAA94-EDA3-4A64-8C01-CF58D6146897}
 	EndGlobalSection
 EndGlobal
