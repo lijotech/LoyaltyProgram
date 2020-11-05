@@ -87,7 +87,9 @@ namespace MemberAPI
                 };
             });
 
+            services.AddTransient<IMemberRepository, MemberRepository>();
             services.AddTransient(typeof(IRepository<>), typeof(Repository<>));
+            services.AddTransient<IUnitofWork, UnitofWork>();
 
             services.AddTransient<IValidator<CreateMemberModel>, CreateMemberModelValidator>();
             services.AddTransient<IValidator<UpdateMemberModel>, UpdateMemberModelValidator>();

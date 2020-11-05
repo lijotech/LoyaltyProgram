@@ -22,19 +22,20 @@ namespace MemberAPI.Controllers.v1
     {
         private readonly IMapper _mapper;
 
-        public IRepository<Member> _repository { get; }
+        //public IRepository<Member> _repository { get; }
+        private IUnitofWork _unitofWork;
         private readonly IEmailSender _emailSender;
         private readonly IDataProtector protector;
         private readonly IDataProtector protectorForgotPassword;
 
         public MemberController(IMapper mapper,
-            IRepository<Member> repository,
+            IUnitofWork unitofWork,
             IDataProtectionProvider dataProtectionProvider,
             IEmailSender emailSender,
             DataProtectionPurposeStrings dataProtectionPurposeStrings)
         {
             _mapper = mapper;
-            _repository = repository;
+            _unitofWork = unitofWork;
             _emailSender = emailSender;
             protector = dataProtectionProvider.CreateProtector(dataProtectionPurposeStrings.MemberEmailConfirmationValue);
             protectorForgotPassword = dataProtectionProvider.CreateProtector(dataProtectionPurposeStrings.MemberForgotPasswordTokenValue);
@@ -56,7 +57,7 @@ namespace MemberAPI.Controllers.v1
         {
             try
             {
-                var members = _repository.GetAll().ToList();
+                var members = _unitofWork.MemberData.GetAllMembers();                
                 return _mapper.Map<List<ViewMemberModel>>(members);
 
             }
@@ -85,7 +86,7 @@ namespace MemberAPI.Controllers.v1
             try
             {
 
-                var member = await _repository.GetItem(entityId);
+                var member = await _unitofWork.MemberData.GetMember(entityId);
                 if (member==null)
                 {
                     return NotFound("Member Information Not Found");
@@ -113,17 +114,17 @@ namespace MemberAPI.Controllers.v1
         [HttpPost]
         public async Task<ActionResult<ViewMemberModel>> MemberOperation([FromBody] CreateMemberModel createMemberModel)
         {
-            await _repository.BeginTransactionAsync();
+          
             try
             {
-                bool memberEmailCheck = _repository.GetAll().Any(c => c.Email == createMemberModel.Email);
+                bool memberEmailCheck = _unitofWork.MemberData.GetAllMembers().Any(c => c.Email == createMemberModel.Email);
                 if (memberEmailCheck)
                     return BadRequest($"Member Already Registered with Email Id {createMemberModel.Email}");
 
 
                 var member = _mapper.Map<Member>(createMemberModel);
                 member.EmailConfirmationToken = protector.Protect(string.Format("{0}{1}", member.Username, System.DateTime.Now.ToString()));
-                var addedMember = await _repository.AddAsync(member);
+                var addedMember = await _unitofWork.MemberData.AddMemberAsync(member);
 
                 if (addedMember != null)
                 {                    
@@ -142,12 +143,12 @@ namespace MemberAPI.Controllers.v1
                     return BadRequest("Member not added.");
                 }
 
-                int f = await _repository.SaveChangesAsync();
+                int f =  _unitofWork.Complete();
                 return _mapper.Map<ViewMemberModel>(addedMember);
             }
             catch (Exception ex)
             {
-                _repository.Rollback();
+               // _repository.Rollback();
                 return BadRequest(ex.Message);
             }
         }
@@ -166,24 +167,24 @@ namespace MemberAPI.Controllers.v1
         [HttpPut]
         public async Task<ActionResult<ViewMemberModel>> MemberOperation([FromBody] UpdateMemberModel updateMemberModel)
         {
-            await _repository.BeginTransactionAsync();
+            
             try
             {
-                var member = await _repository.GetItem(updateMemberModel.MemberId);
+                var member = await _unitofWork.MemberData.GetMember(updateMemberModel.MemberId);
 
                 if (member == null)
                 {
                     return BadRequest($"No Member found with the id {updateMemberModel.MemberId}");
                 }               
 
-                var updatedMember = _repository.Update(_mapper.Map(updateMemberModel, member));
-                int f = await _repository.SaveChangesAsync();
+                var updatedMember = await _unitofWork.MemberData.UpdateMember(_mapper.Map(updateMemberModel, member));
+                int f =  _unitofWork.Complete();
                 return _mapper.Map<ViewMemberModel>(updatedMember);
 
             }
             catch (Exception ex)
             {
-                _repository.Rollback();
+                //_repository.Rollback();
                 return BadRequest(ex.Message);
             }
         }
@@ -201,7 +202,7 @@ namespace MemberAPI.Controllers.v1
         [HttpGet]
         public async Task<ActionResult<string>> ConfirmEmail([FromQuery] string username, [FromQuery] string token)
         {
-            await _repository.BeginTransactionAsync();
+             
             try
             {
                 if (username == null || token == null)
@@ -209,7 +210,7 @@ namespace MemberAPI.Controllers.v1
                     return BadRequest("Broken Link");
                 }
                 //string g = protector.Unprotect(username);
-                var memberEmailConfirmCheck = _repository.GetAll()
+                var memberEmailConfirmCheck = _unitofWork.MemberData.GetAllMembers()
                     .Where(c => c.Email == protector.Unprotect(username)
                     && c.EmailConfirmationToken == token).SingleOrDefault();
                 if (memberEmailConfirmCheck != null)
@@ -221,8 +222,8 @@ namespace MemberAPI.Controllers.v1
 
                     var updatedMember = _mapper.Map(updateMember, memberEmailConfirmCheck);
                     updatedMember.IsEmailConfirmed = true;
-                    updatedMember = _repository.Update(updatedMember);
-                    int f = await _repository.SaveChangesAsync();
+                    updatedMember =await _unitofWork.MemberData.UpdateMember(updatedMember);
+                    int f = _unitofWork.Complete();
                     return Ok("Email Confirmed.");
                 }
 
@@ -230,7 +231,7 @@ namespace MemberAPI.Controllers.v1
             }
             catch (Exception ex)
             {
-                _repository.Rollback();
+                //_repository.Rollback();
                 return BadRequest(ex.Message);
             }
         }
@@ -250,7 +251,7 @@ namespace MemberAPI.Controllers.v1
         [HttpPost]
         public async Task<ActionResult<string>> ForgotPassword([FromBody] ForgotPasswordModel forgotPasswordModel)
         {
-            await _repository.BeginTransactionAsync();
+             
             try
             {
                 if (forgotPasswordModel == null)
@@ -258,7 +259,7 @@ namespace MemberAPI.Controllers.v1
                     return BadRequest("Email is not supplied");
                 }
                 //string g = protector.Unprotect(e);
-                var forgotPasswordUser = _repository.GetAll()
+                var forgotPasswordUser = _unitofWork.MemberData.GetAllMembers()
                     .Where(c => c.Email == forgotPasswordModel.Email && c.IsEmailConfirmed == true).SingleOrDefault();
                 if (forgotPasswordUser != null)
                 {
@@ -270,7 +271,7 @@ namespace MemberAPI.Controllers.v1
                     var memberToUpdate = _mapper.Map(updateMember, forgotPasswordUser);
                     memberToUpdate.ForgotPasswordConfirmationToken = protectorForgotPassword
                         .Protect(string.Format("{0}|{1}", forgotPasswordUser.MemberId, System.DateTime.Now.ToString()));
-                    var updatedMember = _repository.Update(memberToUpdate);
+                    var updatedMember = await _unitofWork.MemberData.UpdateMember(memberToUpdate);
 
                     if (updatedMember != null)
                     {
@@ -286,14 +287,14 @@ namespace MemberAPI.Controllers.v1
                         "Reset Password", "Click this link to Continue:" + PasswordResetLink, null);
                         _emailSender.SendEmail(message);
                     }
-                    int f = await _repository.SaveChangesAsync();
+                    int f = _unitofWork.Complete();
                     return Ok(" Reset Password Link Sent to Registered Email.");
                 }
                 return BadRequest("Invalid Request");
             }
             catch (Exception ex)
             {
-                _repository.Rollback();
+               // _repository.Rollback();
                 return BadRequest(ex.Message);
             }
         }
@@ -324,11 +325,11 @@ namespace MemberAPI.Controllers.v1
         [HttpPost]
         public async Task<ActionResult<string>> ResetPassword([FromBody] ResetPasswordModel resetPassword)
         {
-            await _repository.BeginTransactionAsync();
+             //_repository.BeginTransactionAsync();
             try
             {
                 string g = protectorForgotPassword.Unprotect(resetPassword.Email);
-                var forgotPasswordUser = _repository.GetAll()
+                var forgotPasswordUser = _unitofWork.MemberData.GetAllMembers()
                     .Where(c => c.Email == g && c.IsEmailConfirmed == true
                     && c.ForgotPasswordConfirmationToken == resetPassword.Token).SingleOrDefault();
                 if (forgotPasswordUser != null)
@@ -340,9 +341,9 @@ namespace MemberAPI.Controllers.v1
                     var memberToUpdate = _mapper.Map(updateMember, forgotPasswordUser);
                     memberToUpdate.Password = resetPassword.Password;
                     memberToUpdate.ForgotPasswordConfirmationToken = null;
-                    var updatedMember = _repository.Update(memberToUpdate);
+                    var updatedMember = await _unitofWork.MemberData.UpdateMember(memberToUpdate);
 
-                    int f = await _repository.SaveChangesAsync();
+                    int f = _unitofWork.Complete();
                     if (updatedMember != null)
                         return Ok("Password Reset Successfully.");
                     else
@@ -352,7 +353,7 @@ namespace MemberAPI.Controllers.v1
             }
             catch (Exception ex)
             {
-                _repository.Rollback();
+               // _repository.Rollback();
                 return BadRequest(ex.Message);
             }
         }

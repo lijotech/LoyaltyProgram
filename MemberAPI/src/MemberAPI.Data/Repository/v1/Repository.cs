@@ -2,32 +2,43 @@ using MemberAPI.Data.Database;
 using Microsoft.EntityFrameworkCore.Storage;
 using System;
 using System.Linq;
+using Microsoft.EntityFrameworkCore;
 using System.Threading.Tasks;
+using System.Collections.Generic;
 
 namespace MemberAPI.Data.Repository.v1
 {
-    public class Repository<TEntity> : IRepository<TEntity> where TEntity : class, new()
+    public class Repository<T> : IRepository<T> where T : class
     {
-        private bool _disposed;
-        private readonly MemberContext _memberContext;
-        public Repository(MemberContext memberContext)
+        private readonly DbSet<T> _entities;
+        public Repository(DbContext context)
         {
-            _memberContext = memberContext;
+             _entities = context.Set<T>();
         }
 
-        public IQueryable<TEntity> GetAll()
+        public IEnumerable<T> GetAll()
         {
             try
             {
 
-                return _memberContext.Set<TEntity>();
+                return _entities.ToList();
             }
             catch (Exception)
             {
                 throw new Exception("Couldn't retrieve entities");
             }
         }
-        public async Task<TEntity> GetItem(Guid entityId)
+        public async Task<IEnumerable<T>> GetAllAsync()
+        {   try
+            {
+                return await _entities.ToListAsync();
+            }
+            catch (Exception)
+            {
+                throw new Exception("Couldn't retrieve entities");
+            }
+        }
+        public async Task<T> GetItem(T entityId)
         {
             try
             {
@@ -36,7 +47,7 @@ namespace MemberAPI.Data.Repository.v1
                     throw new ArgumentNullException($"{nameof(GetItem)} entity must not be null");
                 }
 
-                var searchList = await _memberContext.FindAsync<TEntity>(entityId);
+                var searchList = await _entities.FindAsync(entityId);
 
                 return searchList;
             }
@@ -48,7 +59,7 @@ namespace MemberAPI.Data.Repository.v1
 
 
 
-        public async Task<TEntity> AddAsync(TEntity entity)
+        public async Task<T> AddAsync(T entity)
         {
             if (entity == null)
             {
@@ -58,8 +69,7 @@ namespace MemberAPI.Data.Repository.v1
             try
             {
 
-                await _memberContext.AddAsync(entity);
-                //await _memberContext.SaveChangesAsync();
+                await _entities.AddAsync(entity);
 
                 return entity;
             }
@@ -69,7 +79,7 @@ namespace MemberAPI.Data.Repository.v1
             }
         }
 
-        public TEntity Update(TEntity entity)
+        public T Update(T entity)
         {
             if (entity == null)
             {
@@ -78,8 +88,7 @@ namespace MemberAPI.Data.Repository.v1
 
             try
             {
-                _memberContext.Update(entity);
-                //await _memberContext.SaveChangesAsync();
+                _entities.Update(entity);
 
                 return entity;
             }
@@ -89,52 +98,21 @@ namespace MemberAPI.Data.Repository.v1
             }
         }
 
-        public int SaveChanges()
+        public void Delete(T entity)
         {
-            int f= _memberContext.SaveChanges();
-            _memberContext.Database.CommitTransaction();
-            return f;
-            
-        }
-
-        public async Task<int> SaveChangesAsync()
-        {
-            int f= await _memberContext.SaveChangesAsync();
-            _memberContext.Database.CommitTransaction();
-            return f;
-        }
-        public IDbContextTransaction BeginTransaction()
-        {
-            return _memberContext.Database.BeginTransaction();
-
-        }
-
-        public async Task<IDbContextTransaction> BeginTransactionAsync()
-        {
-            return await _memberContext.Database.BeginTransactionAsync();
-        }
-
-        protected void Dispose(bool disposing)
-        {
-            if (!this._disposed)
+            if (entity == null)
             {
-                if (disposing)
-                {
-                    _memberContext.Dispose();
-                }
+                throw new ArgumentNullException($"{nameof(AddAsync)} entity must not be null");
             }
-            this._disposed = true;
+            try
+            {
+                _entities.Remove(entity);
+            }
+            catch (Exception)
+            {
+                throw new Exception($"{nameof(entity)} could not be updated");
+            }
         }
-
-        public void Dispose()
-        {
-            Dispose(true);
-            GC.SuppressFinalize(this);
-        }
-        public void Rollback()
-        {
-            _memberContext.Database.RollbackTransaction();
-            Dispose();
-        }
+        
     }
 }

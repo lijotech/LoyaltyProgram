@@ -1,27 +1,22 @@
 using Microsoft.EntityFrameworkCore.Storage;
 using System;
-using System.Linq;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace MemberAPI.Data.Repository.v1{
 
-    public interface IRepository<TEntity> where TEntity : class, new()
+    public interface IRepository<T> where T : class
     {
-        IQueryable<TEntity> GetAll();
+        IEnumerable<T> GetAll();
+        Task<IEnumerable<T>> GetAllAsync();
 
-        Task<TEntity> AddAsync(TEntity entity);
+        Task<T> AddAsync(T entity);
 
-        TEntity Update(TEntity entity);
+        T Update(T entity);
 
-        Task<TEntity> GetItem(Guid entityId);
+        Task<T> GetItem(T entityId);
 
-        IDbContextTransaction BeginTransaction();
-        Task<IDbContextTransaction> BeginTransactionAsync();
-
-        int SaveChanges();
-        Task<int> SaveChangesAsync();
-        void Rollback();
-
+        void Delete(T entity);
 
     }
 }
