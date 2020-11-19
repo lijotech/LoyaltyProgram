@@ -5,18 +5,18 @@ using System.Threading.Tasks;
 
 namespace MemberAPI.Data.Repository.v1{
 
-    public interface IRepository<T> where T : class
+    public interface IRepository<TEntity> where TEntity : class
     {
-        IEnumerable<T> GetAll();
-        Task<IEnumerable<T>> GetAllAsync();
+        IEnumerable<TEntity> GetAll();
+        Task<IEnumerable<TEntity>> GetAllAsync();
 
-        Task<T> AddAsync(T entity);
+        Task<TEntity> AddAsync(TEntity entity);
 
-        T Update(T entity);
+        TEntity Update(TEntity entity);
 
-        Task<T> GetItem(T entityId);
+        Task<TEntity> GetItem(TEntity entityId);
 
-        void Delete(T entity);
+        void Delete(TEntity entity);
 
     }
 }

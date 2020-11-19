@@ -8,15 +8,17 @@ using System.Collections.Generic;
 
 namespace MemberAPI.Data.Repository.v1
 {
-    public class Repository<T> : IRepository<T> where T : class
-    {
-        private readonly DbSet<T> _entities;
-        public Repository(DbContext context)
+    public class Repository<TEntity> : IRepository<TEntity> where TEntity  : class
+    {        
+        internal DbContext  _context;
+        internal DbSet<TEntity> _entities;
+        public Repository (DbContext  context)
         {
-             _entities = context.Set<T>();
+            this._context = context;
+            this._entities = context.Set<TEntity>();
         }
 
-        public IEnumerable<T> GetAll()
+        public IEnumerable<TEntity> GetAll()
         {
             try
             {
@@ -28,7 +30,7 @@ namespace MemberAPI.Data.Repository.v1
                 throw new Exception("Couldn't retrieve entities");
             }
         }
-        public async Task<IEnumerable<T>> GetAllAsync()
+        public async Task<IEnumerable<TEntity>> GetAllAsync()
         {   try
             {
                 return await _entities.ToListAsync();
@@ -38,7 +40,7 @@ namespace MemberAPI.Data.Repository.v1
                 throw new Exception("Couldn't retrieve entities");
             }
         }
-        public async Task<T> GetItem(T entityId)
+        public async Task<TEntity> GetItem(TEntity entityId)
         {
             try
             {
@@ -59,7 +61,7 @@ namespace MemberAPI.Data.Repository.v1
 
 
 
-        public async Task<T> AddAsync(T entity)
+        public async Task<TEntity> AddAsync(TEntity entity)
         {
             if (entity == null)
             {
@@ -79,7 +81,7 @@ namespace MemberAPI.Data.Repository.v1
             }
         }
 
-        public T Update(T entity)
+        public TEntity Update(TEntity entity)
         {
             if (entity == null)
             {
@@ -98,7 +100,7 @@ namespace MemberAPI.Data.Repository.v1
             }
         }
 
-        public void Delete(T entity)
+        public void Delete(TEntity entity)
         {
             if (entity == null)
             {

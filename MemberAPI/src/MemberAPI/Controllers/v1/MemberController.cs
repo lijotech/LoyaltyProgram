@@ -2,8 +2,9 @@
 using MemberAPI.Data.Repository.v1;
 using MemberAPI.Domain.Entities;
 using MemberAPI.Models.v1;
-using MemberAPI.Security.v1;
+using MemberAPI.Data.Security.v1;
 using MemberAPI.Service.v1;
+using MemberAPI.Service.v1.Master;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -22,7 +23,7 @@ namespace MemberAPI.Controllers.v1
     {
         private readonly IMapper _mapper;
 
-        //public IRepository<Member> _repository { get; }
+        private readonly IServiceMaster _serviceMaster;
         private IUnitofWork _unitofWork;
         private readonly IEmailSender _emailSender;
         private readonly IDataProtector protector;
@@ -32,11 +33,13 @@ namespace MemberAPI.Controllers.v1
             IUnitofWork unitofWork,
             IDataProtectionProvider dataProtectionProvider,
             IEmailSender emailSender,
-            DataProtectionPurposeStrings dataProtectionPurposeStrings)
+            DataProtectionPurposeStrings dataProtectionPurposeStrings,
+            IServiceMaster serviceMaster)
         {
             _mapper = mapper;
             _unitofWork = unitofWork;
             _emailSender = emailSender;
+            _serviceMaster=serviceMaster;
             protector = dataProtectionProvider.CreateProtector(dataProtectionPurposeStrings.MemberEmailConfirmationValue);
             protectorForgotPassword = dataProtectionProvider.CreateProtector(dataProtectionPurposeStrings.MemberForgotPasswordTokenValue);
         }
@@ -57,8 +60,10 @@ namespace MemberAPI.Controllers.v1
         {
             try
             {
-                var members = _unitofWork.MemberData.GetAllMembers();                
-                return _mapper.Map<List<ViewMemberModel>>(members);
+                // var members = _unitofWork.MemberData.GetAllMembers();                
+                // return _mapper.Map<List<ViewMemberModel>>(members);
+
+                return _mapper.Map<List<ViewMemberModel>>(_serviceMaster.GetAllMembers());
 
             }
             catch (Exception ex)
@@ -86,7 +91,8 @@ namespace MemberAPI.Controllers.v1
             try
             {
 
-                var member = await _unitofWork.MemberData.GetMember(entityId);
+                //var member = await _unitofWork.MemberData.GetMember(entityId);
+                var member=await _serviceMaster.GetMember (entityId);
                 if (member==null)
                 {
                     return NotFound("Member Information Not Found");
@@ -117,11 +123,13 @@ namespace MemberAPI.Controllers.v1
           
             try
             {
-                bool memberEmailCheck = _unitofWork.MemberData.GetAllMembers().Any(c => c.Email == createMemberModel.Email);
+                
+                //bool memberEmailCheck = _unitofWork.MemberData.GetAllMembers().Any(c => c.Email == createMemberModel.Email);
+                bool memberEmailCheck = _serviceMaster.GetAllMembers().Any(c => c.Email == createMemberModel.Email);
                 if (memberEmailCheck)
                     return BadRequest($"Member Already Registered with Email Id {createMemberModel.Email}");
 
-
+                /*
                 var member = _mapper.Map<Member>(createMemberModel);
                 member.EmailConfirmationToken = protector.Protect(string.Format("{0}{1}", member.Username, System.DateTime.Now.ToString()));
                 var addedMember = await _unitofWork.MemberData.AddMemberAsync(member);
@@ -144,7 +152,16 @@ namespace MemberAPI.Controllers.v1
                 }
 
                 int f =  _unitofWork.Complete();
-                return _mapper.Map<ViewMemberModel>(addedMember);
+                */
+                var addedMember=await _serviceMaster.AddMemberAsync(
+                     _mapper.Map<Member>(createMemberModel),
+                     Url.Action("ConfirmEmail", "Member",Request.Scheme)
+                );
+                if (addedMember == null)
+                {
+                    return BadRequest("Member not added.");
+                }
+                return _mapper.Map<ViewMemberModel>(addedMember);                                   
             }
             catch (Exception ex)
             {
@@ -171,14 +188,15 @@ namespace MemberAPI.Controllers.v1
             try
             {
                 var member = await _unitofWork.MemberData.GetMember(updateMemberModel.MemberId);
-
                 if (member == null)
                 {
                     return BadRequest($"No Member found with the id {updateMemberModel.MemberId}");
                 }               
 
-                var updatedMember = await _unitofWork.MemberData.UpdateMember(_mapper.Map(updateMemberModel, member));
-                int f =  _unitofWork.Complete();
+                //var updatedMember = await _unitofWork.MemberData.UpdateMember(_mapper.Map(updateMemberModel, member));
+                //int f =  _unitofWork.Complete();
+                var updatedMember =await _serviceMaster.UpdateMember(_mapper.Map(updateMemberModel, member));
+
                 return _mapper.Map<ViewMemberModel>(updatedMember);
 
             }

@@ -10,8 +10,9 @@ using FluentValidation.AspNetCore;
 using MemberAPI.Data.Database;
 using MemberAPI.Data.Repository.v1;
 using MemberAPI.Models.v1;
-using MemberAPI.Security.v1;
+using MemberAPI.Data.Security.v1;
 using MemberAPI.Service.v1;
+using MemberAPI.Service.v1.Master;
 using MemberAPI.Validators.v1;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -100,6 +101,7 @@ namespace MemberAPI
 
             services.AddSingleton(Configuration.GetSection("EmailConfiguration").Get<EmailConfiguration>());
             services.AddScoped<IEmailSender, EmailSender>();
+            services.AddScoped<IServiceMaster, ServiceMaster>();
 
             services.Configure<FormOptions>(o =>
             {
