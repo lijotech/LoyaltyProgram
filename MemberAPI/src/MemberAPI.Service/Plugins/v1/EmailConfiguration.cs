@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace MemberAPI.Service.v1
+namespace MemberAPI.Service.Plugins.v1
 {
     public class EmailConfiguration
     {

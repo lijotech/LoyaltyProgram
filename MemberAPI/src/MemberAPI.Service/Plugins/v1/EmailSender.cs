@@ -5,7 +5,7 @@ using System;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
-namespace MemberAPI.Service.v1
+namespace MemberAPI.Service.Plugins.v1
 {
     public class EmailSender : IEmailSender
     {

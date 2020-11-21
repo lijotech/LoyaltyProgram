@@ -26,8 +26,7 @@ namespace MemberAPI.Models.v1
         public int? StateId { get; set; }
 
         public int? MemberStatus { get; set; }
-        public int? PaymentCategory { get; set; }      
-        public string ForgotPasswordConfirmationToken { get; set; }
+        public int? PaymentCategory { get; set; }              
 
     }
 }

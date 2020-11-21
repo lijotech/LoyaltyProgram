@@ -1,16 +1,11 @@
 ﻿using AutoMapper;
-using MemberAPI.Data.Repository.v1;
 using MemberAPI.Domain.Entities;
 using MemberAPI.Models.v1;
-using MemberAPI.Data.Security.v1;
-using MemberAPI.Service.v1;
-using MemberAPI.Service.v1.Master;
-using Microsoft.AspNetCore.DataProtection;
+using MemberAPI.Service.Master.v1;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -22,26 +17,13 @@ namespace MemberAPI.Controllers.v1
     public class MemberController : ControllerBase
     {
         private readonly IMapper _mapper;
-
         private readonly IServiceMaster _serviceMaster;
-        private IUnitofWork _unitofWork;
-        private readonly IEmailSender _emailSender;
-        private readonly IDataProtector protector;
-        private readonly IDataProtector protectorForgotPassword;
+        
 
-        public MemberController(IMapper mapper,
-            IUnitofWork unitofWork,
-            IDataProtectionProvider dataProtectionProvider,
-            IEmailSender emailSender,
-            DataProtectionPurposeStrings dataProtectionPurposeStrings,
-            IServiceMaster serviceMaster)
+        public MemberController(IMapper mapper,IServiceMaster serviceMaster)
         {
-            _mapper = mapper;
-            _unitofWork = unitofWork;
-            _emailSender = emailSender;
-            _serviceMaster=serviceMaster;
-            protector = dataProtectionProvider.CreateProtector(dataProtectionPurposeStrings.MemberEmailConfirmationValue);
-            protectorForgotPassword = dataProtectionProvider.CreateProtector(dataProtectionPurposeStrings.MemberForgotPasswordTokenValue);
+            _mapper = mapper;          
+            _serviceMaster = serviceMaster;            
         }
 
 
@@ -52,7 +34,7 @@ namespace MemberAPI.Controllers.v1
         /// <response code="200">Returned if the list of Members was retrieved</response>
         /// <response code="400">Returned if the Members could not be retrieved</response>
         /// <response code="401">Returned if Unauthorized</response>
-        [ProducesResponseType(StatusCodes.Status200OK) ]
+        [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [HttpGet]
@@ -60,11 +42,7 @@ namespace MemberAPI.Controllers.v1
         {
             try
             {
-                // var members = _unitofWork.MemberData.GetAllMembers();                
-                // return _mapper.Map<List<ViewMemberModel>>(members);
-
                 return _mapper.Map<List<ViewMemberModel>>(_serviceMaster.GetAllMembers());
-
             }
             catch (Exception ex)
             {
@@ -90,10 +68,8 @@ namespace MemberAPI.Controllers.v1
         {
             try
             {
-
-                //var member = await _unitofWork.MemberData.GetMember(entityId);
-                var member=await _serviceMaster.GetMember (entityId);
-                if (member==null)
+                var member = await _serviceMaster.GetMember(entityId);
+                if (member == null)
                 {
                     return NotFound("Member Information Not Found");
                 }
@@ -120,52 +96,26 @@ namespace MemberAPI.Controllers.v1
         [HttpPost]
         public async Task<ActionResult<ViewMemberModel>> MemberOperation([FromBody] CreateMemberModel createMemberModel)
         {
-          
+
             try
             {
-                
-                //bool memberEmailCheck = _unitofWork.MemberData.GetAllMembers().Any(c => c.Email == createMemberModel.Email);
+
                 bool memberEmailCheck = _serviceMaster.GetAllMembers().Any(c => c.Email == createMemberModel.Email);
                 if (memberEmailCheck)
                     return BadRequest($"Member Already Registered with Email Id {createMemberModel.Email}");
 
-                /*
-                var member = _mapper.Map<Member>(createMemberModel);
-                member.EmailConfirmationToken = protector.Protect(string.Format("{0}{1}", member.Username, System.DateTime.Now.ToString()));
-                var addedMember = await _unitofWork.MemberData.AddMemberAsync(member);
-
-                if (addedMember != null)
-                {                    
-                    var confirmationLink = Url.Action("ConfirmEmail", "Member",
-                                        new
-                                        {
-                                            username = protector.Protect(member.Username),
-                                            token = member.EmailConfirmationToken
-                                        }, Request.Scheme);
-                    var message = new Message(new string[] { "lijotech@gmail.com" },
-                        "Email Confirmation", "Click this link to Continue:" + confirmationLink, null);
-                    _emailSender.SendEmail(message);
-                }
-                else
-                {
-                    return BadRequest("Member not added.");
-                }
-
-                int f =  _unitofWork.Complete();
-                */
-                var addedMember=await _serviceMaster.AddMemberAsync(
+                var addedMember = await _serviceMaster.AddMemberAsync(
                      _mapper.Map<Member>(createMemberModel),
-                     Url.Action("ConfirmEmail", "Member",Request.Scheme)
+                     Url.Action("ConfirmEmail", "Member", null, Request.Scheme)
                 );
                 if (addedMember == null)
                 {
                     return BadRequest("Member not added.");
                 }
-                return _mapper.Map<ViewMemberModel>(addedMember);                                   
+                return _mapper.Map<ViewMemberModel>(addedMember);
             }
             catch (Exception ex)
             {
-               // _repository.Rollback();
                 return BadRequest(ex.Message);
             }
         }
@@ -184,25 +134,23 @@ namespace MemberAPI.Controllers.v1
         [HttpPut]
         public async Task<ActionResult<ViewMemberModel>> MemberOperation([FromBody] UpdateMemberModel updateMemberModel)
         {
-            
             try
-            {
-                var member = await _unitofWork.MemberData.GetMember(updateMemberModel.MemberId);
+            {               
+                var member = await _serviceMaster.GetMember(updateMemberModel.MemberId);
                 if (member == null)
                 {
                     return BadRequest($"No Member found with the id {updateMemberModel.MemberId}");
-                }               
-
-                //var updatedMember = await _unitofWork.MemberData.UpdateMember(_mapper.Map(updateMemberModel, member));
-                //int f =  _unitofWork.Complete();
-                var updatedMember =await _serviceMaster.UpdateMember(_mapper.Map(updateMemberModel, member));
-
+                }
+               
+                var updatedMember = await _serviceMaster.UpdateMember(_mapper.Map(updateMemberModel, member));
+                if (updatedMember == null)
+                {
+                    return BadRequest("Invalid Request");
+                }
                 return _mapper.Map<ViewMemberModel>(updatedMember);
-
             }
             catch (Exception ex)
             {
-                //_repository.Rollback();
                 return BadRequest(ex.Message);
             }
         }
@@ -220,36 +168,21 @@ namespace MemberAPI.Controllers.v1
         [HttpGet]
         public async Task<ActionResult<string>> ConfirmEmail([FromQuery] string username, [FromQuery] string token)
         {
-             
             try
             {
                 if (username == null || token == null)
                 {
                     return BadRequest("Broken Link");
                 }
-                //string g = protector.Unprotect(username);
-                var memberEmailConfirmCheck = _unitofWork.MemberData.GetAllMembers()
-                    .Where(c => c.Email == protector.Unprotect(username)
-                    && c.EmailConfirmationToken == token).SingleOrDefault();
-                if (memberEmailConfirmCheck != null)
+                var updatedMember = await _serviceMaster.ConfirmEmail(username, token);
+                if (updatedMember == null)
                 {
-                    UpdateMemberModel updateMember = new UpdateMemberModel
-                    {
-                        MemberId = memberEmailConfirmCheck.MemberId                       
-                    };
-
-                    var updatedMember = _mapper.Map(updateMember, memberEmailConfirmCheck);
-                    updatedMember.IsEmailConfirmed = true;
-                    updatedMember =await _unitofWork.MemberData.UpdateMember(updatedMember);
-                    int f = _unitofWork.Complete();
-                    return Ok("Email Confirmed.");
+                    return BadRequest("Invalid Request");
                 }
-
-                return BadRequest("Invalid Request");
+                return Ok("Email Confirmed.");
             }
             catch (Exception ex)
             {
-                //_repository.Rollback();
                 return BadRequest(ex.Message);
             }
         }
@@ -269,50 +202,23 @@ namespace MemberAPI.Controllers.v1
         [HttpPost]
         public async Task<ActionResult<string>> ForgotPassword([FromBody] ForgotPasswordModel forgotPasswordModel)
         {
-             
             try
             {
                 if (forgotPasswordModel == null)
                 {
                     return BadRequest("Email is not supplied");
                 }
-                //string g = protector.Unprotect(e);
-                var forgotPasswordUser = _unitofWork.MemberData.GetAllMembers()
-                    .Where(c => c.Email == forgotPasswordModel.Email && c.IsEmailConfirmed == true).SingleOrDefault();
-                if (forgotPasswordUser != null)
+                var updatedMember = await _serviceMaster.ForgotPassword(
+                    forgotPasswordModel.Email,
+                    Url.Action("ResetPassword", "Member", null, Request.Scheme));
+                if (updatedMember == null)
                 {
-                    UpdateMemberModel updateMember = new UpdateMemberModel
-                    {
-                        MemberId = forgotPasswordUser.MemberId
-                    };
-
-                    var memberToUpdate = _mapper.Map(updateMember, forgotPasswordUser);
-                    memberToUpdate.ForgotPasswordConfirmationToken = protectorForgotPassword
-                        .Protect(string.Format("{0}|{1}", forgotPasswordUser.MemberId, System.DateTime.Now.ToString()));
-                    var updatedMember = await _unitofWork.MemberData.UpdateMember(memberToUpdate);
-
-                    if (updatedMember != null)
-                    {
-                        var PasswordResetLink = Url.Action("ResetPassword", "Member",
-                                        new
-                                        {
-                                            email = protectorForgotPassword.Protect(updatedMember.Email),
-                                            token = memberToUpdate.ForgotPasswordConfirmationToken
-                                        }, Request.Scheme);
-
-
-                        var message = new Message(new string[] { "lijotech@gmail.com" },
-                        "Reset Password", "Click this link to Continue:" + PasswordResetLink, null);
-                        _emailSender.SendEmail(message);
-                    }
-                    int f = _unitofWork.Complete();
-                    return Ok(" Reset Password Link Sent to Registered Email.");
+                    return BadRequest("Invalid Request");
                 }
-                return BadRequest("Invalid Request");
+                return Ok(" Reset Password Link Sent to Registered Email.");
             }
             catch (Exception ex)
             {
-               // _repository.Rollback();
                 return BadRequest(ex.Message);
             }
         }
@@ -343,35 +249,22 @@ namespace MemberAPI.Controllers.v1
         [HttpPost]
         public async Task<ActionResult<string>> ResetPassword([FromBody] ResetPasswordModel resetPassword)
         {
-             //_repository.BeginTransactionAsync();
             try
             {
-                string g = protectorForgotPassword.Unprotect(resetPassword.Email);
-                var forgotPasswordUser = _unitofWork.MemberData.GetAllMembers()
-                    .Where(c => c.Email == g && c.IsEmailConfirmed == true
-                    && c.ForgotPasswordConfirmationToken == resetPassword.Token).SingleOrDefault();
-                if (forgotPasswordUser != null)
+                if (resetPassword == null)
                 {
-                    UpdateMemberModel updateMember = new UpdateMemberModel
-                    {
-                        MemberId = forgotPasswordUser.MemberId
-                    };
-                    var memberToUpdate = _mapper.Map(updateMember, forgotPasswordUser);
-                    memberToUpdate.Password = resetPassword.Password;
-                    memberToUpdate.ForgotPasswordConfirmationToken = null;
-                    var updatedMember = await _unitofWork.MemberData.UpdateMember(memberToUpdate);
-
-                    int f = _unitofWork.Complete();
-                    if (updatedMember != null)
-                        return Ok("Password Reset Successfully.");
-                    else
-                        return BadRequest("Password Reset Failed.");
+                    return BadRequest("Invalid Request");
                 }
-                return BadRequest("Invalid Request");
+                var updatedMember = await _serviceMaster.ResetPassword(
+                   resetPassword.Email, resetPassword.Token, resetPassword.Password);
+                if (updatedMember == null)
+                {
+                    return BadRequest("Password Reset Failed.");
+                }
+                return Ok("Password Reset Successfully.");
             }
             catch (Exception ex)
             {
-               // _repository.Rollback();
                 return BadRequest(ex.Message);
             }
         }

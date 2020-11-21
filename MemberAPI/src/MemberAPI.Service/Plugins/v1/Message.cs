@@ -5,7 +5,7 @@ using System.Text;
 using Microsoft.AspNetCore.Http;
 using MimeKit;
 
-namespace MemberAPI.Service.v1
+namespace MemberAPI.Service.Plugins.v1
 {
     public class Message
     {
