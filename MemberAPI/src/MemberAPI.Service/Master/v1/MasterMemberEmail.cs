@@ -13,17 +13,17 @@ namespace MemberAPI.Service.Master.v1
     {
         public async Task<Member> ConfirmEmail(string username, string token, CancellationToken ct = default)
         {
-            var memberEmailConfirmCheck = _unitofWork.MemberData.GetAllMembers()
-                   .Where(c => c.Email == protectorEmailConfirm.Unprotect(username)
-                   && c.EmailConfirmationToken == token).SingleOrDefault();
-           
+            var allmembers = await _unitofWork.MemberData.GetAllMembersAsync();
+            var memberEmailConfirmCheck = allmembers.Where(c => c.Email == protectorEmailConfirm.Unprotect(username)
+             && c.EmailConfirmationToken == token).SingleOrDefault();
+
             if (memberEmailConfirmCheck != null)
             {
                 if (memberEmailConfirmCheck.IsEmailConfirmed)
                     return memberEmailConfirmCheck;
                 memberEmailConfirmCheck.IsEmailConfirmed = true;
                 var updatedmember = await _unitofWork.MemberData.UpdateMember(memberEmailConfirmCheck);
-                _unitofWork.Complete();                
+                _unitofWork.Complete();
             }
             return memberEmailConfirmCheck;
         }
