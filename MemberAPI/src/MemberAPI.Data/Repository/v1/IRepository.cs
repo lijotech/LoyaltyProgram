@@ -12,7 +12,7 @@ namespace MemberAPI.Data.Repository.v1{
 
         Task<TEntity> AddAsync(TEntity entity);
 
-        TEntity Update(TEntity entity);
+        Task<TEntity> Update(TEntity entity);
 
         Task<TEntity> GetItem(TEntity entityId);
 

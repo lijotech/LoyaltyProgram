@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using MemberAPI.Data.Database;
 using MemberAPI.Domain.Entities;
+using Microsoft.EntityFrameworkCore;
 
 namespace MemberAPI.Data.Repository.v1
 {
@@ -25,6 +26,17 @@ namespace MemberAPI.Data.Repository.v1
         {
            return _memberContext.Member.ToList();
         }
+        public async Task<IEnumerable<Member>> GetAllMembersAsync()
+        {
+            return await _memberContext.Member.ToListAsync();
+        }
+
+
+        //public async Task<IEnumerable<Member>> GetAllMembersAsync()
+        //{
+        //    var members = await _memberContext.Member.AsNoTracking().ToListAsync();
+        //    return members.ConvertAll<IEnumerable<Member>>();
+        //}
 
         public async Task<Member> GetMember(Guid entityId)
         {

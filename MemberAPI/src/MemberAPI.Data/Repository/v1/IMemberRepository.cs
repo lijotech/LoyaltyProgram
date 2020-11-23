@@ -9,7 +9,9 @@ namespace MemberAPI.Data.Repository.v1
     public interface IMemberRepository: IRepository<Member>
     {
          IEnumerable<Member> GetAllMembers();
-         Task<Member> AddMemberAsync(Member entity);
+
+        Task<IEnumerable<Member>> GetAllMembersAsync();
+        Task<Member> AddMemberAsync(Member entity);
         
          Task<Member> UpdateMember(Member entity); 
 

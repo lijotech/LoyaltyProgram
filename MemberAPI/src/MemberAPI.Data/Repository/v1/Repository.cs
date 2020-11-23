@@ -8,17 +8,18 @@ using System.Collections.Generic;
 
 namespace MemberAPI.Data.Repository.v1
 {
-    public class Repository<TEntity> : IRepository<TEntity> where TEntity  : class
-    {        
+    public class Repository<TEntity> : IRepository<TEntity> where TEntity : class
+    {
         internal DbContext  _context;
+        //private readonly IDbContext _context;
         internal DbSet<TEntity> _entities;
-        public Repository (DbContext  context)
+        public Repository(DbContext context)
         {
             this._context = context;
             this._entities = context.Set<TEntity>();
         }
 
-        public IEnumerable<TEntity> GetAll()
+        public virtual IEnumerable<TEntity> GetAll()
         {
             try
             {
@@ -30,8 +31,9 @@ namespace MemberAPI.Data.Repository.v1
                 throw new Exception("Couldn't retrieve entities");
             }
         }
-        public async Task<IEnumerable<TEntity>> GetAllAsync()
-        {   try
+        public virtual async Task<IEnumerable<TEntity>> GetAllAsync()
+        {
+            try
             {
                 return await _entities.ToListAsync();
             }
@@ -40,7 +42,7 @@ namespace MemberAPI.Data.Repository.v1
                 throw new Exception("Couldn't retrieve entities");
             }
         }
-        public async Task<TEntity> GetItem(TEntity entityId)
+        public virtual async Task<TEntity> GetItem(TEntity entityId)
         {
             try
             {
@@ -58,10 +60,7 @@ namespace MemberAPI.Data.Repository.v1
                 throw new Exception("Couldn't retrieve entities");
             }
         }
-
-
-
-        public async Task<TEntity> AddAsync(TEntity entity)
+        public virtual async Task<TEntity> AddAsync(TEntity entity)
         {
             if (entity == null)
             {
@@ -80,31 +79,29 @@ namespace MemberAPI.Data.Repository.v1
                 throw new Exception($"{nameof(entity)} could not be saved");
             }
         }
-
-        public TEntity Update(TEntity entity)
+        public virtual Task<TEntity> Update(TEntity entity)
         {
             if (entity == null)
             {
-                throw new ArgumentNullException($"{nameof(AddAsync)} entity must not be null");
+                throw new ArgumentNullException($"{nameof(Update)} entity must not be null");
             }
 
             try
             {
                 _entities.Update(entity);
 
-                return entity;
+                return Task.FromResult(entity);
             }
             catch (Exception)
             {
                 throw new Exception($"{nameof(entity)} could not be updated");
             }
         }
-
-        public void Delete(TEntity entity)
+        public virtual void Delete(TEntity entity)
         {
             if (entity == null)
             {
-                throw new ArgumentNullException($"{nameof(AddAsync)} entity must not be null");
+                throw new ArgumentNullException($"{nameof(Delete)} entity must not be null");
             }
             try
             {
@@ -115,6 +112,6 @@ namespace MemberAPI.Data.Repository.v1
                 throw new Exception($"{nameof(entity)} could not be updated");
             }
         }
-        
+
     }
 }
