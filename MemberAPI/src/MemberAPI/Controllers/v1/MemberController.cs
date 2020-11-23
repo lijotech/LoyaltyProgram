@@ -18,12 +18,12 @@ namespace MemberAPI.Controllers.v1
     {
         private readonly IMapper _mapper;
         private readonly IServiceMaster _serviceMaster;
-        
 
-        public MemberController(IMapper mapper,IServiceMaster serviceMaster)
+
+        public MemberController(IMapper mapper, IServiceMaster serviceMaster)
         {
-            _mapper = mapper;          
-            _serviceMaster = serviceMaster;            
+            _mapper = mapper;
+            _serviceMaster = serviceMaster;
         }
 
 
@@ -38,11 +38,11 @@ namespace MemberAPI.Controllers.v1
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [HttpGet]
-        public ActionResult<List<ViewMemberModel>> MemberOperation()
+        public async Task<ActionResult<List<ViewMemberModel>>> MemberOperation()
         {
             try
             {
-                return _mapper.Map<List<ViewMemberModel>>(_serviceMaster.GetAllMembers());
+                return _mapper.Map<List<ViewMemberModel>>(await _serviceMaster.GetAllMembers());
             }
             catch (Exception ex)
             {
@@ -100,7 +100,8 @@ namespace MemberAPI.Controllers.v1
             try
             {
 
-                bool memberEmailCheck = _serviceMaster.GetAllMembers().Any(c => c.Email == createMemberModel.Email);
+                var allmembers= await _serviceMaster.GetAllMembers();
+                bool memberEmailCheck=allmembers.Any(c => c.Email == createMemberModel.Email);
                 if (memberEmailCheck)
                     return BadRequest($"Member Already Registered with Email Id {createMemberModel.Email}");
 
@@ -135,13 +136,13 @@ namespace MemberAPI.Controllers.v1
         public async Task<ActionResult<ViewMemberModel>> MemberOperation([FromBody] UpdateMemberModel updateMemberModel)
         {
             try
-            {               
+            {
                 var member = await _serviceMaster.GetMember(updateMemberModel.MemberId);
                 if (member == null)
                 {
                     return BadRequest($"No Member found with the id {updateMemberModel.MemberId}");
                 }
-               
+
                 var updatedMember = await _serviceMaster.UpdateMember(_mapper.Map(updateMemberModel, member));
                 if (updatedMember == null)
                 {
@@ -262,6 +263,38 @@ namespace MemberAPI.Controllers.v1
                     return BadRequest("Password Reset Failed.");
                 }
                 return Ok("Password Reset Successfully.");
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+        /// <summary>
+        /// Action for Login Check.
+        /// </summary>
+        /// <param name="loginMember">Model for Login</param>
+        /// <returns>Returns the status Message.</returns>
+        /// <response code="200">Returned if Successfull</response>
+        /// <response code="400">Returned if the model couldn't be parsed or the member couldn't be found</response>
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [Route("Login")]
+        [HttpPost]
+        public async  Task<ActionResult<ViewMemberModel>> Login([FromBody] LoginMemberModel loginMember)
+        {
+            try
+            {
+                if (loginMember == null)
+                {
+                    return BadRequest("Invalid Request");
+                }
+                var validloginMember =await  _serviceMaster.Login(
+                   loginMember.Email, loginMember.Password);
+                if (validloginMember == null)
+                {
+                    return BadRequest("Login Failed.");
+                }
+                return _mapper.Map<ViewMemberModel>(validloginMember);               
             }
             catch (Exception ex)
             {
