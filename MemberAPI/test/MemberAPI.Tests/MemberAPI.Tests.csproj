@@ -16,7 +16,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\MemberAPI\MemberAPI.csproj" />   
+    <ProjectReference Include="..\MemberAPI.MockData\MemberAPI.MockData.csproj" />   
   </ItemGroup>
 
 </Project>

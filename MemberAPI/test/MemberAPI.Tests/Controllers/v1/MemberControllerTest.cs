@@ -1,15 +1,12 @@
 using System;
 using Xunit;
-using Microsoft.AspNetCore.Mvc;
+
 using System.Net;
-using AutoMapper;
-using MemberAPI.Security.v1;
-using MemberAPI.Service.v1;
-using Microsoft.AspNetCore.DataProtection;
+
 using MemberAPI.Data.Repository.v1;
-using MemberAPI.Controllers.v1;
+
 using MemberAPI.Domain.Entities;
-using MemberAPI.Models.v1;
+
 using FakeItEasy;
 using FluentAssertions;
 using System.Collections.Generic;
@@ -18,7 +15,7 @@ namespace MemberAPI.Tests.Controllers.v1
 {
     public class MemberControllerTest
     {
-        private readonly MemberController _testee;
+        /*private readonly MemberController _testee;
         private readonly CreateMemberModel _createMemberModel;
         private readonly IRepository<Member> _MemberRepository;
         private IUnitofWork _unitofWork;
@@ -97,7 +94,7 @@ namespace MemberAPI.Tests.Controllers.v1
         }
         */
 
-        [Fact]
+        /*[Fact]
         public  void Members_ShouldReturnListOfMembers()
         {
             // var mockSet = new Mock<DbSet<Member>>();
@@ -112,6 +109,7 @@ namespace MemberAPI.Tests.Controllers.v1
             //result.Value.Count.Should().Be(1);
             Assert.Equal(4,4);
         }
+        */
         /*[Fact]
         public void GetReturnsProduct()
         {
@@ -130,6 +128,6 @@ namespace MemberAPI.Tests.Controllers.v1
         }
         */
 
-       
+
     }
 }
