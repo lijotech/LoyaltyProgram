@@ -2,6 +2,7 @@
 using MemberAPI.Domain.Entities;
 using MemberAPI.Models.v1;
 using MemberAPI.Service.Master.v1;
+using MemberAPI.Data.Security.v1;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using System;
@@ -18,12 +19,13 @@ namespace MemberAPI.Controllers.v1
     {
         private readonly IMapper _mapper;
         private readonly IServiceMaster _serviceMaster;
+        private readonly ILoggerManager _logger;
 
-
-        public MemberController(IMapper mapper, IServiceMaster serviceMaster)
+        public MemberController(IMapper mapper, IServiceMaster serviceMaster, ILoggerManager logger)
         {
             _mapper = mapper;
             _serviceMaster = serviceMaster;
+            _logger = logger;
         }
 
 
@@ -42,6 +44,10 @@ namespace MemberAPI.Controllers.v1
         {
             try
             {
+                _logger.LogInfo("Here is info message from the controller.");
+                _logger.LogDebug("Here is debug message from the controller.");
+                _logger.LogWarn("Here is warn message from the controller.");
+                _logger.LogError("Here is error message from the controller.");
                 return _mapper.Map<List<ViewMemberModel>>(await _serviceMaster.GetAllMembers());
             }
             catch (Exception ex)
@@ -100,8 +106,8 @@ namespace MemberAPI.Controllers.v1
             try
             {
 
-                var allmembers= await _serviceMaster.GetAllMembers();
-                bool memberEmailCheck=allmembers.Any(c => c.Email == createMemberModel.Email);
+                var allmembers = await _serviceMaster.GetAllMembers();
+                bool memberEmailCheck = allmembers.Any(c => c.Email == createMemberModel.Email);
                 if (memberEmailCheck)
                     return BadRequest($"Member Already Registered with Email Id {createMemberModel.Email}");
 
@@ -280,7 +286,7 @@ namespace MemberAPI.Controllers.v1
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [Route("Login")]
         [HttpPost]
-        public async  Task<ActionResult<ViewMemberModel>> Login([FromBody] LoginMemberModel loginMember)
+        public async Task<ActionResult<ViewMemberModel>> Login([FromBody] LoginMemberModel loginMember)
         {
             try
             {
@@ -288,13 +294,13 @@ namespace MemberAPI.Controllers.v1
                 {
                     return BadRequest("Invalid Request");
                 }
-                var validloginMember =await  _serviceMaster.Login(
+                var validloginMember = await _serviceMaster.Login(
                    loginMember.Email, loginMember.Password);
                 if (validloginMember == null)
                 {
                     return BadRequest("Login Failed.");
                 }
-                return _mapper.Map<ViewMemberModel>(validloginMember);               
+                return _mapper.Map<ViewMemberModel>(validloginMember);
             }
             catch (Exception ex)
             {

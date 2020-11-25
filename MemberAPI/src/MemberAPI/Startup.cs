@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using System.Threading.Tasks;
+using Microsoft.AspNetCore.Http;
 using AutoMapper;
 using FluentValidation;
 using FluentValidation.AspNetCore;
@@ -11,6 +11,7 @@ using MemberAPI.Data.Database;
 using MemberAPI.Data.Repository.v1;
 using MemberAPI.Models.v1;
 using MemberAPI.Data.Security.v1;
+using MemberAPI.Security.v1;
 using MemberAPI.Service.Plugins.v1;
 using MemberAPI.Service.Master.v1;
 using MemberAPI.Validators.v1;
@@ -25,6 +26,8 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.OpenApi.Models;
+using NLog.Extensions.Logging;
+using NLog.Web;
 
 namespace MemberAPI
 {
@@ -33,6 +36,7 @@ namespace MemberAPI
         public Startup(IConfiguration configuration)
         {
             Configuration = configuration;
+            NLog.LogManager.LoadConfiguration(System.String.Concat(Directory.GetCurrentDirectory(), "/nlog.config"));
         }
 
         public IConfiguration Configuration { get; }
@@ -110,12 +114,15 @@ namespace MemberAPI
                 o.MemoryBufferThreshold = int.MaxValue;
             });
             services.AddSingleton<DataProtectionPurposeStrings>();
+            services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
+            services.AddSingleton<ILoggerManager, LoggerManager>();
             services.AddControllers();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
-        public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
-        {
+        public void Configure(IApplicationBuilder app, IWebHostEnvironment env,ILoggerFactory loggerFactory)
+        {           
+            app.UseMiddleware<LoggingMiddleware>();
             if (env.IsDevelopment())
             {
                 app.UseDeveloperExceptionPage();
@@ -127,7 +134,7 @@ namespace MemberAPI
                 c.RoutePrefix = string.Empty;
             });
             app.UseRouting();
-
+           
             //app.UseAuthorization();
 
             app.UseEndpoints(endpoints =>
