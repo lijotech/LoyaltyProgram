@@ -16,18 +16,18 @@ namespace MemberAPI.Service.Plugins.v1
             _emailConfig = emailConfig;
         }
 
-        public void SendEmail(Message message)
+        public int SendEmail(Message message)
         {
             var emailMessage = CreateEmailMessage(message);
 
-            Send(emailMessage);
+            return Send(emailMessage);
         }
 
-        public async Task SendEmailAsync(Message message)
+        public async Task<int> SendEmailAsync(Message message)
         {
             var mailMessage = CreateEmailMessage(message);
 
-            await SendAsync(mailMessage);
+            return await SendAsync(mailMessage);
         }
 
         private MimeMessage CreateEmailMessage(Message message)
@@ -58,7 +58,7 @@ namespace MemberAPI.Service.Plugins.v1
             return emailMessage;
         }
 
-        private void Send(MimeMessage mailMessage)
+        private int Send(MimeMessage mailMessage)
         {
             using (var client = new SmtpClient())
             {
@@ -69,11 +69,13 @@ namespace MemberAPI.Service.Plugins.v1
                     client.Authenticate(_emailConfig.UserName, _emailConfig.Password);
 
                     client.Send(mailMessage);
+                    return 1;
                 }
                 catch
                 {
                     //log an error message or throw an exception, or both.
-                    throw;
+                    //throw;
+                    return -1;
                 }
                 finally
                 {
@@ -83,7 +85,7 @@ namespace MemberAPI.Service.Plugins.v1
             }
         }
 
-        private async Task SendAsync(MimeMessage mailMessage)
+        private async Task<int> SendAsync(MimeMessage mailMessage)
         {
             using (var client = new SmtpClient())
             {
@@ -94,16 +96,18 @@ namespace MemberAPI.Service.Plugins.v1
                     await client.AuthenticateAsync(_emailConfig.UserName, _emailConfig.Password);
 
                     await client.SendAsync(mailMessage);
+                    return 1;
                 }
                 catch
                 {
                     //log an error message or throw an exception, or both.
-                    throw;
+                    //throw;
+                    return -1;
                 }
                 finally
                 {
                     await client.DisconnectAsync(true);
-                    client.Dispose();
+                    client.Dispose();                   
                 }
             }
         }

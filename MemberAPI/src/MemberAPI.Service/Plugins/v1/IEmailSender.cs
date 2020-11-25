@@ -7,7 +7,7 @@ namespace MemberAPI.Service.Plugins.v1
 {
     public interface IEmailSender
     {
-        void SendEmail(Message message);
-        Task SendEmailAsync(Message message);
+        int SendEmail(Message message);
+        Task<int> SendEmailAsync(Message message);
     }
 }
