@@ -27,7 +27,7 @@ namespace MemberAPI.Service.Master.v1
             member.EmailConfirmationToken = emailToken;
             var addedMember = await _unitofWork.MemberData.AddMemberAsync(member);
 
-            if (addedMember != null)
+            if (addedMember != null && !string.IsNullOrEmpty( confirmationLinkbase))
             {
                 var confirmationLink = string.Format("{0}?username={1}&token={2}",
                                         confirmationLinkbase,
