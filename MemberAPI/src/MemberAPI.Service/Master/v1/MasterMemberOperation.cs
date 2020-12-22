@@ -9,7 +9,7 @@ using MemberAPI.Service.Extensions.v1;
 using Microsoft.AspNetCore.DataProtection;
 using MemberAPI.Service.Plugins.v1;
 using System.Linq;
-
+using Microsoft.Extensions.Logging;
 
 namespace MemberAPI.Service.Master.v1
 {
@@ -45,12 +45,14 @@ namespace MemberAPI.Service.Master.v1
 
         public async Task<IEnumerable<Member>> GetAllMembers(CancellationToken ct = default)
         {
+            _logger.LogInformation("LOG inside service layer get all");
             return await _unitofWork.MemberData.GetAllMembersAsync();
         }
 
 
         public Task<Member> GetMember(System.Guid entityId, CancellationToken ct = default)
         {
+            _logger.LogInformation("LOG inside service layer");
             var member = _unitofWork.MemberData.GetAllMembers().Where(s => s.MemberId == entityId).SingleOrDefault();
             return Task.FromResult(member);
 

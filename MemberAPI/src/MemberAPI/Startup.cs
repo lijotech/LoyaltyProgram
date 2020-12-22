@@ -21,9 +21,9 @@ using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.OpenApi.Models;
 using NLog.Extensions.Logging;
@@ -36,7 +36,9 @@ namespace MemberAPI
         public Startup(IConfiguration configuration)
         {
             Configuration = configuration;
-            NLog.LogManager.LoadConfiguration(System.String.Concat(Directory.GetCurrentDirectory(), "/nlog.config"));
+            //NLog.LogManager.LoadConfiguration(System.String.Concat(Directory.GetCurrentDirectory(), "/nlog.config"));
+
+           
         }
 
         public IConfiguration Configuration { get; }
@@ -44,10 +46,12 @@ namespace MemberAPI
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
+
             services.AddOptions();
             services.AddDbContextPool<MemberContext>(
                  options => options.UseSqlServer(Configuration.GetConnectionString("live")));
             services.AddAutoMapper(typeof(Startup));
+            services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
             services.AddMvc()
                 .AddFluentValidation()
                 .ConfigureApiBehaviorOptions(opt =>
@@ -114,14 +118,16 @@ namespace MemberAPI
                 o.MemoryBufferThreshold = int.MaxValue;
             });
             services.AddSingleton<DataProtectionPurposeStrings>();
-            services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
+
             services.AddSingleton<ILoggerManager, LoggerManager>();
             services.AddControllers();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env,ILoggerFactory loggerFactory)
-        {           
+        {
+        
+            
             app.UseMiddleware<LoggingMiddleware>();
             if (env.IsDevelopment())
             {

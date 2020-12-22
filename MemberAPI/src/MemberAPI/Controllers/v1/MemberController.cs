@@ -9,6 +9,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 
 namespace MemberAPI.Controllers.v1
 {
@@ -19,9 +20,9 @@ namespace MemberAPI.Controllers.v1
     {
         private readonly IMapper _mapper;
         private readonly IServiceMaster _serviceMaster;
-        private readonly ILoggerManager _logger;
+        private readonly ILogger<MemberController> _logger;
 
-        public MemberController(IMapper mapper, IServiceMaster serviceMaster, ILoggerManager logger)
+        public MemberController(IMapper mapper, IServiceMaster serviceMaster, ILogger<MemberController>  logger)
         {
             _mapper = mapper;
             _serviceMaster = serviceMaster;
@@ -44,10 +45,10 @@ namespace MemberAPI.Controllers.v1
         {
             try
             {
-                _logger.LogInfo("Here is info message from the controller.");
-                _logger.LogDebug("Here is debug message from the controller.");
-                _logger.LogWarn("Here is warn message from the controller.");
-                _logger.LogError("Here is error message from the controller.");
+                //_logger.LogInformation("Here is info message from the controller.");
+                //_logger.LogDebug("Here is debug message from the controller.");
+                //_logger.LogWarning("Here is warn message from the controller.");
+                //_logger.LogError("Here is error message from the controller.");
                 return _mapper.Map<List<ViewMemberModel>>(await _serviceMaster.GetAllMembers());
             }
             catch (Exception ex)
